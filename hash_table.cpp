@@ -15,13 +15,17 @@ So you can search for a thing in array by it's name (key) instead of an index.
 
 HashTable array should be dynamic (stl)
 
+Dereference value
+//*m_hash_array[hashed_key] is same as **(m_offset + hashed_key)
+
 *******************************************************************************/
 
 #include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
 
 
-#define CAPACITY 10 // Size of the HashTable.
-#define INITIAL_IDX 0  // test index
+#define CAPACITY 100 // Size of the HashTable.
 
 
 class HashTable
@@ -34,10 +38,13 @@ class HashTable
         
     public:
         HashTable();
-        int hash(std::string key);
-        void insert(std::string key, int value); // put key and value in array, overload for any type of value
-        int get(std::string key);
-        void print_debug();
+        int hash(char* key);
+        int get(char* key);
+        int size();
+        void insert(char* key, int value); // put key and value in array, overload for any type of value
+        void remove(char* key);
+        void erase();
+        void item_info(char* key);
 };
 
 HashTable::HashTable() 
@@ -46,18 +53,24 @@ HashTable::HashTable()
     m_size = 0;
 };
 
-int HashTable::hash(std::string key)
+int HashTable::hash(char* key)
 {
-    // define hashing algorithm
-    int hashed_key = INITIAL_IDX;
-    return hashed_key;
+    // defined hashing algorithm, char to ascii number
+    unsigned long hash = 0;
+
+    for (int j = 0; key[j]; j++)
+    {
+        hash += key[j];
+    }
+    
+    return hash % CAPACITY;
 }
 
-void HashTable::insert(std::string key, int value)
+void HashTable::insert(char* key, int value)
 {
-    int hashed_key = hash(key); // hashed key is an index
+    int hashed_key = hash(key); // hashed key is an index, 94
     
-    int* p_hashed_key = new int(hashed_key);
+    int* p_hashed_key = new int(hashed_key);    // use malloc()??
     int* p_hashed_value = new int(value);
     
     m_hash_array[hashed_key] = p_hashed_value;
@@ -65,27 +78,71 @@ void HashTable::insert(std::string key, int value)
     m_size++;
 }
 
-void HashTable::print_debug()
-{
-    std::cout << m_hash_array[INITIAL_IDX] << std::endl;
-    std::cout << *m_hash_array[INITIAL_IDX] << std::endl;
-    std::cout << *m_offset << std::endl;
-    std::cout << **m_offset << std::endl;
-}
-
-int HashTable::get(std::string key)
+void HashTable::remove(char* key)
 {
     int hashed_key = hash(key);
+
+    //free(m_hash_array[hashed_key]);   // use free if malloc was called
+    delete m_hash_array[hashed_key];
+
+    **(m_offset + hashed_key) = 0;
+    
+    m_size--;
+}
+
+void HashTable::erase()
+{
+    // for (auto& item : *m_hash_array)
+    // {
+    //     item = 0;
+    // }
+}
+
+void HashTable::item_info(char* key)
+{
+    int hashed_key = hash(key);
+
+    if (*m_hash_array[hashed_key] == 0) {return;}
+
+    std::cout << "Hashed key index: " << hashed_key << std::endl;
+    std::cout << "Key: " << "UNHASH ASCII" << std::endl;
+    std::cout << "Value address: " << *(m_offset + hashed_key) << std::endl;
+    std::cout << "Value: " << **(m_offset + hashed_key) << std::endl;
+    std::cout << "Hash Table size: " << m_size << std::endl;
+    std::cout << "---" << std::endl;
+}
+
+int HashTable::get(char* key)
+{
+    int hashed_key = hash(key);
+    
     return **(m_offset + hashed_key);
 }
 
 int main()
 {
-    HashTable hash_table = HashTable();
-    hash_table.insert("test", 1);
-    hash_table.print_debug();
+    char key_1[] = "abc";
+    int value_1 = 1;
     
-    std::cout << hash_table.get("test") << std::endl;
-
+    char key_2[] = "test";
+    int value_2 = 2;
+    
+    HashTable hash_table = HashTable();
+    
+    hash_table.insert(key_1, value_1);
+    
+    hash_table.erase();
+    
+    hash_table.insert(key_2, value_2);
+    
+    //hash_table.erase();
+    hash_table.remove(key_1);
+    
+    hash_table.item_info(key_1);
+    hash_table.item_info(key_2);
+    
+    std::cout << hash_table.get(key_1) << std::endl;
+    std::cout << hash_table.get(key_2) << std::endl;
+    
     return 0;
 }
