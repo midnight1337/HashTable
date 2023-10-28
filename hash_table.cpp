@@ -1,17 +1,18 @@
 /******************************************************************************
 
-element_address = offset + (element_size + element_index)
+element_address = offset + element_index
 offset - memory address of a first element of an array (or just memory address of an array itself)
 
-Hash Table abstract
-Hash table contains:
-Array of pointers (Pointers are integer numbers, which always take up the same amount of space)
-Every pointer points to specific location of arrays of primitve types like
-String array, int array, char array etc.
+
+Hash table:
+Hash Table contains a array of pointers
+Every pointer points to specific location of arrays of primitve types like: string, int, char etc.
+Pointer is integer number, which always take up the same amount of space, so type of data of pointed variable is not important for managing Hash table array.
 
 Hash tables get their name from a trick called hashing, 
 which lets them translate an arbitrary key into an integer number that can work as an index in a regular array.
-So you can search for a thing in array by it's name (key) instead of an index.
+It lets user's search for a thing in array by it's name (key) instead of an index.
+
 
 HashTable array should be dynamic (stl)
 
@@ -21,8 +22,7 @@ Dereference value
 *******************************************************************************/
 
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdexcept>
 
 
 #define CAPACITY 100 // Size of the HashTable.
@@ -31,13 +31,15 @@ Dereference value
 class HashTable
 {
     private:
-        int* m_hash_array[CAPACITY];
-        int** m_offset;   // memory address of an pointers array
+        int** m_hash_array;
+        int** m_offset;
         int m_size;
+        void allocate_memory();
         
         
     public:
         HashTable();
+        ~HashTable() = default;
         int hash(char* key);
         int get(char* key);
         int size();
@@ -49,13 +51,27 @@ class HashTable
 
 HashTable::HashTable() 
 {
+    allocate_memory();
     m_offset = &(*(m_hash_array + 0));   // or simply m_offset = m_hash_array
     m_size = 0;
 };
 
+void HashTable::allocate_memory()
+{
+    // dynamicallu allocate CAPACITY size for m_hash_array
+    m_hash_array = new int * [CAPACITY];
+    
+    // Fill it with nullptr which indicates empty space
+    for (int i = 0; i < CAPACITY; i++)
+    {
+        m_hash_array[i] = nullptr;
+    }
+}
+
+
 int HashTable::hash(char* key)
 {
-    // defined hashing algorithm, char to ascii number
+    // hashing algorithm: char to ascii number
     unsigned long hash = 0;
 
     for (int j = 0; key[j]; j++)
@@ -68,12 +84,11 @@ int HashTable::hash(char* key)
 
 void HashTable::insert(char* key, int value)
 {
-    int hashed_key = hash(key); // hashed key is an index, 94
+    int hashed_key = hash(key); // hashed key is an index for value in m_hash_array
     
-    int* p_hashed_key = new int(hashed_key);    // use malloc()??
-    int* p_hashed_value = new int(value);
+    int* p_hashed_value = new int(value);   // create on heap variable value and hold a pointer to that memory
     
-    m_hash_array[hashed_key] = p_hashed_value;
+    m_hash_array[hashed_key] = p_hashed_value;  // Store pointer to the memory of particular value, in array with index as hashed key
     
     m_size++;
 }
@@ -81,17 +96,23 @@ void HashTable::insert(char* key, int value)
 void HashTable::remove(char* key)
 {
     int hashed_key = hash(key);
-
-    //free(m_hash_array[hashed_key]);   // use free if malloc was called
-    delete m_hash_array[hashed_key];
-
-    **(m_offset + hashed_key) = 0;
+    
+    m_hash_array[hashed_key] = nullptr;
+    //*(m_offset + hashed_key) = nullptr;
     
     m_size--;
 }
 
 void HashTable::erase()
 {
+    //FIX ME, I don't work as I should :D
+    for (int i = 0; i < CAPACITY; i++)
+    {
+        delete m_hash_array[i];
+    }
+    
+    delete[] m_hash_array;
+    
     // for (auto& item : *m_hash_array)
     // {
     //     item = 0;
@@ -101,22 +122,49 @@ void HashTable::erase()
 void HashTable::item_info(char* key)
 {
     int hashed_key = hash(key);
-
-    if (*m_hash_array[hashed_key] == 0) {return;}
-
-    std::cout << "Hashed key index: " << hashed_key << std::endl;
-    std::cout << "Key: " << "UNHASH ASCII" << std::endl;
-    std::cout << "Value address: " << *(m_offset + hashed_key) << std::endl;
-    std::cout << "Value: " << **(m_offset + hashed_key) << std::endl;
-    std::cout << "Hash Table size: " << m_size << std::endl;
-    std::cout << "---" << std::endl;
+    
+    try
+    {
+        if (m_hash_array[hashed_key] == nullptr)
+        {
+            throw std::invalid_argument("Key not found in Hash Table, can't provide item info.\n");
+        }
+        
+        std::cout << "Hashed key index: " << hashed_key << std::endl;
+        std::cout << "Value address: " << *(m_offset + hashed_key) << std::endl;
+        std::cout << "Value: " << **(m_offset + hashed_key) << std::endl;
+        std::cout << "m_hash_array[hashed_key]: " << m_hash_array[hashed_key] << std::endl;
+        std::cout << "*m_hash_array[hashed_key]: " << *m_hash_array[hashed_key] << std::endl;
+        std::cout << "Hash Table size: " << m_size << std::endl;
+        std::cout << "---" << std::endl;
+    }
+    
+    catch (std::invalid_argument& e)
+    {
+        // char error, controls stream buffer, cerr is able to write output to log file
+        std::cerr << e.what();
+    }
 }
 
 int HashTable::get(char* key)
 {
     int hashed_key = hash(key);
     
-    return **(m_offset + hashed_key);
+    try
+    {
+        if (m_hash_array[hashed_key] == nullptr)
+        {
+            throw std::invalid_argument("Key not found in Hash Table, return -1.\n");
+        }
+        return *m_hash_array[hashed_key];
+        //return **(m_offset + hashed_key);
+    }
+    
+    catch (std::invalid_argument& e)
+    {
+        std::cerr << e.what();
+        return -1;
+    }
 }
 
 int main()
@@ -131,8 +179,6 @@ int main()
     
     hash_table.insert(key_1, value_1);
     
-    hash_table.erase();
-    
     hash_table.insert(key_2, value_2);
     
     //hash_table.erase();
@@ -141,8 +187,9 @@ int main()
     hash_table.item_info(key_1);
     hash_table.item_info(key_2);
     
+    
     std::cout << hash_table.get(key_1) << std::endl;
     std::cout << hash_table.get(key_2) << std::endl;
-    
+
     return 0;
 }
