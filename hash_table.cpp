@@ -1,60 +1,12 @@
-/******************************************************************************
+#include "hash_table.h"
 
-element_address = offset + element_index
-offset - memory address of a first element of an array (or just memory address of an array itself)
-
-
-Hash table:
-Hash Table contains a array of pointers
-Every pointer points to specific location of arrays of primitve types like: string, int, char etc.
-Pointer is integer number, which always take up the same amount of space, so type of data of pointed variable is not important for managing Hash table array.
-
-Hash tables get their name from a trick called hashing, 
-which lets them translate an arbitrary key into an integer number that can work as an index in a regular array.
-It lets user's search for a thing in array by it's name (key) instead of an index.
-
-
-HashTable array should be dynamic (stl)
-
-Dereference value
-//*m_hash_array[hashed_key] is same as **(m_offset + hashed_key)
-
-*******************************************************************************/
-
-#include <iostream>
-#include <stdexcept>
-
-
-#define CAPACITY 100 // Size of the HashTable.
-
-
-class HashTable
-{
-    private:
-        int** m_hash_array;
-        int** m_offset;
-        int m_size;
-        void allocate_memory();
-        
-        
-    public:
-        HashTable();
-        ~HashTable() = default;
-        int hash(char* key);
-        int get(char* key);
-        int size();
-        void insert(char* key, int value); // put key and value in array, overload for any type of value
-        void remove(char* key);
-        void erase();
-        void item_info(char* key);
-};
 
 HashTable::HashTable() 
 {
     allocate_memory();
     m_offset = &(*(m_hash_array + 0));   // or simply m_offset = m_hash_array
     m_size = 0;
-};
+}
 
 void HashTable::allocate_memory()
 {
@@ -67,7 +19,6 @@ void HashTable::allocate_memory()
         m_hash_array[i] = nullptr;
     }
 }
-
 
 int HashTable::hash(char* key)
 {
@@ -82,6 +33,7 @@ int HashTable::hash(char* key)
     return hash % CAPACITY;
 }
 
+//template
 void HashTable::insert(char* key, int value)
 {
     int hashed_key = hash(key); // hashed key is an index for value in m_hash_array
@@ -165,31 +117,4 @@ int HashTable::get(char* key)
         std::cerr << e.what();
         return -1;
     }
-}
-
-int main()
-{
-    char key_1[] = "abc";
-    int value_1 = 1;
-    
-    char key_2[] = "test";
-    int value_2 = 2;
-    
-    HashTable hash_table = HashTable();
-    
-    hash_table.insert(key_1, value_1);
-    
-    hash_table.insert(key_2, value_2);
-    
-    //hash_table.erase();
-    hash_table.remove(key_1);
-    
-    hash_table.item_info(key_1);
-    hash_table.item_info(key_2);
-    
-    
-    std::cout << hash_table.get(key_1) << std::endl;
-    std::cout << hash_table.get(key_2) << std::endl;
-
-    return 0;
 }
